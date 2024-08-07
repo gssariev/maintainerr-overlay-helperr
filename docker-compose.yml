@@ -23,7 +23,7 @@ services:
       VERTICAL_OFFSET: "40"
       VERTICAL_ALIGN: "top"
       
-      RUN_INTERVAL: "2"  # Set the run interval to 60 minutes; default is 480 minutes (8 hours) if not specified
+      RUN_INTERVAL: "2"  # Set the run interval to after X minutes; default is 480 minutes (8 hours) if not specified
     volumes:
       - ./images:/images
       - ./fonts:/fonts
