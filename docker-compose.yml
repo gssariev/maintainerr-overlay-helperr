@@ -10,7 +10,20 @@ services:
       IMAGE_SAVE_PATH: "/images"
       ORIGINAL_IMAGE_PATH: "/images/originals"
       TEMP_IMAGE_PATH: "/images/temp"
+
+      # Change the values here to customize the overlay
       FONT_PATH: "/fonts/AvenirNextLTPro-Bold.ttf"
+      FONT_COLOR: "#ffffff"
+      BACK_COLOR: "#B20710"
+      FONT_SIZE: "45"
+      PADDING: "15"
+      BACK_RADIUS: "20"
+      HORIZONTAL_OFFSET: "80"
+      HORIZONTAL_ALIGN: "center"
+      VERTICAL_OFFSET: "40"
+      VERTICAL_ALIGN: "top"
+      
+      RUN_INTERVAL: "2"  # Set the run interval to 60 minutes; default is 480 minutes (8 hours) if not specified
     volumes:
       - ./images:/images
       - ./fonts:/fonts
