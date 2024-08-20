@@ -6,6 +6,22 @@ $IMAGE_SAVE_PATH = $env:IMAGE_SAVE_PATH
 $ORIGINAL_IMAGE_PATH = $env:ORIGINAL_IMAGE_PATH
 $TEMP_IMAGE_PATH = $env:TEMP_IMAGE_PATH
 $FONT_PATH = $env:FONT_PATH
+$FONT_COLOR = $env:FONT_COLOR
+$BACK_COLOR = $env:BACK_COLOR
+$FONT_SIZE = [int]$env:FONT_SIZE
+$PADDING = [int]$env:PADDING
+$BACK_RADIUS = [int]$env:BACK_RADIUS
+$HORIZONTAL_OFFSET = [int]$env:HORIZONTAL_OFFSET
+$HORIZONTAL_ALIGN = $env:HORIZONTAL_ALIGN
+$VERTICAL_OFFSET = [int]$env:VERTICAL_OFFSET
+$VERTICAL_ALIGN = $env:VERTICAL_ALIGN
+$RUN_INTERVAL = [int]$env:RUN_INTERVAL
+
+if (-not $RUN_INTERVAL) {
+    $RUN_INTERVAL = 8 * 60 * 60 # Default to 8 hours in seconds
+} else {
+    $RUN_INTERVAL = $RUN_INTERVAL * 60 # Convert minutes to seconds
+}
 
 # Function to get data from Maintainerr
 function Get-MaintainerrData {
@@ -53,16 +69,16 @@ function Add-Overlay {
     param (
         [string]$imagePath,
         [string]$text,
-        [string]$fontColor = "#ffffff",
-        [string]$backColor = "#5cb85c",
+        [string]$fontColor = $FONT_COLOR,
+        [string]$backColor = $BACK_COLOR,
         [string]$fontPath = $FONT_PATH,
-        [int]$fontSize = 45,
-        [int]$padding = 20,
-        [int]$backRadius = 20,
-        [int]$horizontalOffset = 80,
-        [string]$horizontalAlign = "right",
-        [int]$verticalOffset = 50,
-        [string]$verticalAlign = "bottom"
+        [int]$fontSize = $FONT_SIZE,
+        [int]$padding = $PADDING,
+        [int]$backRadius = $BACK_RADIUS,
+        [int]$horizontalOffset = $HORIZONTAL_OFFSET,
+        [string]$horizontalAlign = $HORIZONTAL_ALIGN,
+        [int]$verticalOffset = $VERTICAL_OFFSET,
+        [string]$verticalAlign = $VERTICAL_ALIGN
     )
 
     Add-Type -AssemblyName System.Drawing
@@ -70,43 +86,55 @@ function Add-Overlay {
     $image = [System.Drawing.Image]::FromFile($imagePath)
     $graphics = [System.Drawing.Graphics]::FromImage($image)
 
+    # Get image dimensions
+    $imageWidth = $image.Width
+    $imageHeight = $image.Height
+
+    # Calculate scaling factors based on the image dimensions
+    $scaleFactor = $imageWidth / 1000  # Use a reference width of 1000px
+    $scaledFontSize = [int]($fontSize * $scaleFactor)
+    $scaledPadding = [int]($padding * $scaleFactor)
+    $scaledBackRadius = [int]($backRadius * $scaleFactor)
+    $scaledHorizontalOffset = [int]($horizontalOffset * $scaleFactor)
+    $scaledVerticalOffset = [int]($verticalOffset * $scaleFactor)
+
     # Load the custom font
     $privateFontCollection = New-Object System.Drawing.Text.PrivateFontCollection
     $privateFontCollection.AddFontFile($fontPath)
     $fontFamily = $privateFontCollection.Families[0]
-    $font = New-Object System.Drawing.Font($fontFamily, $fontSize, [System.Drawing.FontStyle]::Bold)
+    $font = New-Object System.Drawing.Font($fontFamily, $scaledFontSize, [System.Drawing.FontStyle]::Bold)
 
     $brush = New-Object System.Drawing.SolidBrush([System.Drawing.ColorTranslator]::FromHtml($fontColor))
     $backBrush = New-Object System.Drawing.SolidBrush([System.Drawing.ColorTranslator]::FromHtml($backColor))
-    
+
     # Measure the text size
     $size = $graphics.MeasureString($text, $font)
 
     # Calculate background dimensions based on text size and padding
-    $backWidth = [int]($size.Width + $padding * 2)
-    $backHeight = [int]($size.Height + $padding * 2)
+    $backWidth = [int]($size.Width + $scaledPadding * 2)
+    $backHeight = [int]($size.Height + $scaledPadding * 2)
 
     switch ($horizontalAlign) {
-        "right" { $x = $image.Width - $backWidth - $horizontalOffset }
+        "right" { $x = $image.Width - $backWidth - $scaledHorizontalOffset }
         "center" { $x = ($image.Width - $backWidth) / 2 }
-        "left" { $x = $horizontalOffset }
-        default { $x = $image.Width - $backWidth - $horizontalOffset }
+        "left" { $x = $scaledHorizontalOffset }
+        default { $x = $image.Width - $backWidth - $scaledHorizontalOffset }
     }
-    
+
     switch ($verticalAlign) {
-        "bottom" { $y = $image.Height - $backHeight - $verticalOffset }
+        "bottom" { $y = $image.Height - $backHeight - $scaledVerticalOffset }
         "center" { $y = ($image.Height - $backHeight) / 2 }
-        "top" { $y = $verticalOffset }
-        default { $y = $image.Height - $backHeight - $verticalOffset }
+        "top" { $y = $scaledVerticalOffset }
+        default { $y = $image.Height - $backHeight - $scaledVerticalOffset }
     }
 
     # Draw the rounded rectangle background
     $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
     $path = New-Object System.Drawing.Drawing2D.GraphicsPath
-    $path.AddArc($x, $y, $backRadius, $backRadius, 180, 90)
-    $path.AddArc($x + $backWidth - $backRadius, $y, $backRadius, $backRadius, 270, 90)
-    $path.AddArc($x + $backWidth - $backRadius, $y + $backHeight - $backRadius, $backRadius, $backRadius, 0, 90)
-    $path.AddArc($x, $y + $backHeight - $backRadius, $backRadius, $backRadius, 90, 90)
+    $path.AddArc($x, $y, $scaledBackRadius, $scaledBackRadius, 180, 90)
+    $path.AddArc($x + $backWidth - $scaledBackRadius, $y, $scaledBackRadius, $scaledBackRadius, 270, 90)
+    $path.AddArc($x + $backWidth - $scaledBackRadius, $y + $backHeight - $scaledBackRadius, $scaledBackRadius, $scaledBackRadius, 0, 90)
+    $path.AddArc($x, $y + $backHeight - $scaledBackRadius, $scaledBackRadius, $scaledBackRadius, 90, 90)
     $path.CloseFigure()
     $graphics.FillPath($backBrush, $path)
 
@@ -115,10 +143,9 @@ function Add-Overlay {
     $textY = $y + ($backHeight - $size.Height) / 2
 
     $graphics.DrawString($text, $font, $brush, $textX, $textY)
-    
-    # Use the original image path instead of prefixing with "temp_"
+
     $outputImagePath = [System.IO.Path]::Combine($TEMP_IMAGE_PATH, [System.IO.Path]::GetFileName($imagePath))
-    
+
     try {
         $image.Save($outputImagePath)
     } catch {
@@ -181,7 +208,7 @@ function Process-MediaItems {
                 Copy-Item -Path $originalImagePath -Destination $tempImagePath -Force
 
                 # Apply overlay to the temp copy and get the updated path
-                $tempImagePath = Add-Overlay -imagePath $tempImagePath -text "Leaving $formattedDate" -fontColor "#ffffff" -backColor "#B20710" -fontPath $FONT_PATH -fontSize 45 -padding 15 -backRadius 20 -horizontalOffset 80 -horizontalAlign "center" -verticalOffset 40 -verticalAlign "top"
+                $tempImagePath = Add-Overlay -imagePath $tempImagePath -text "Leaving $formattedDate" -fontColor $FONT_COLOR -backColor $BACK_COLOR -fontPath $FONT_PATH -fontSize $FONT_SIZE -padding $PADDING -backRadius $BACK_RADIUS -horizontalOffset $HORIZONTAL_OFFSET -horizontalAlign $HORIZONTAL_ALIGN -verticalOffset $VERTICAL_OFFSET -verticalAlign $VERTICAL_ALIGN
                 
                 # Upload the modified poster to Plex
                 Upload-Poster -posterPath $tempImagePath -metadataId $plexId
@@ -203,5 +230,9 @@ if (-not (Test-Path -Path $TEMP_IMAGE_PATH)) {
     New-Item -ItemType Directory -Path $TEMP_IMAGE_PATH
 }
 
-# Run the main function
-Process-MediaItems
+# Run the main function in a loop with the specified interval
+while ($true) {
+    Process-MediaItems
+    Write-Host "Waiting for $RUN_INTERVAL seconds before the next run."
+    Start-Sleep -Seconds $RUN_INTERVAL
+}
