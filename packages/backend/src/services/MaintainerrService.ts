@@ -28,10 +28,23 @@ export class MaintainerrService {
 
   async getCollections(): Promise<MaintainerrCollection[]> {
     try {
-      const { data } = await this.client.get<MaintainerrCollection[]>('/api/collections');
+      // Try the dedicated overlay-data endpoint first (Maintainerr >= 3.4.0)
+      const { data } = await this.client.get<MaintainerrCollection[]>('/api/collections/overlay-data');
       this.log.info(`Fetched ${data.length} collection(s) from Maintainerr.`);
       return data;
     } catch (err) {
+      // Fall back to the legacy endpoint (Maintainerr <= 3.3.x)
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        this.log.info('overlay-data endpoint not available, falling back to /api/collections');
+        try {
+          const { data } = await this.client.get<MaintainerrCollection[]>('/api/collections');
+          this.log.info(`Fetched ${data.length} collection(s) from Maintainerr.`);
+          return data;
+        } catch (fallbackErr) {
+          this.log.error(`Failed to fetch Maintainerr collections: ${fallbackErr}`);
+          throw fallbackErr;
+        }
+      }
       this.log.error(`Failed to fetch Maintainerr collections: ${err}`);
       throw err;
     }
