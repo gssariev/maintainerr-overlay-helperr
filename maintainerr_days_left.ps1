@@ -1195,7 +1195,7 @@ function Get-CollectionOrderOverride {
 
 function Process-MediaItems {
 
-    $collectionsUrl = "$MAINTAINERR_URL/api/collections"
+    $collectionsUrl = "$MAINTAINERR_URL/api/collections/overlay-data"
 
     $maxRetries = 3
     $retryCount = 0
