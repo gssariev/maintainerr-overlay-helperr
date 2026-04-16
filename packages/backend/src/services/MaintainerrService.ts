@@ -27,15 +27,41 @@ export class MaintainerrService {
   }
 
   async getCollections(): Promise<MaintainerrCollection[]> {
-    try {
-      const { data } = await this.client.get<MaintainerrCollection[]>('/api/collections');
-      this.log.info(`Fetched ${data.length} collection(s) from Maintainerr.`);
-      return data;
-    } catch (err) {
-      this.log.error(`Failed to fetch Maintainerr collections: ${err}`);
-      throw err;
+  let endpoint = '/api/collections/overlay-data';
+
+  try {
+    // Attempt the primary fetch
+    let response = await this.client.get<MaintainerrCollection[]>(endpoint);
+
+    return this.handleSuccess(response.data);
+
+  } catch (err) {
+    // Check for 404 to trigger fallback
+    if (axios.isAxiosError(err) && err.response?.status === 404) {
+      this.log.info('overlay-data endpoint not available, falling back to /api/collections');
+      endpoint = '/api/collections';
+      
+      try {
+        // Attempt the fallback fetch
+        const fallbackResponse = await this.client.get<MaintainerrCollection[]>(endpoint);
+        return this.handleSuccess(fallbackResponse.data);
+      } catch (fallbackErr) {
+        this.log.error('Failed to fetch Maintainerr collections on fallback endpoint.', fallbackErr);
+        throw fallbackErr;
+      }
     }
+
+    // Handle all other errors from the initial fetch
+    this.log.error('Failed to fetch Maintainerr collections.', err);
+    throw err;
   }
+}
+
+// A small helper to keep the success logic DRY
+private handleSuccess(data: MaintainerrCollection[]): MaintainerrCollection[] {
+  this.log.info(`Fetched ${data.length} collection(s) from Maintainerr.`);
+  return data;
+}
 
   async getLibraryCollections(
     libraryId: string | number,
