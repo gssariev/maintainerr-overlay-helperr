@@ -99,7 +99,7 @@ version: "3.8"
 
 services:
   maintainerr-v3-overlay-helperr:
-    image: gsariev/maintainerr-overlay-helperrlatest
+    image: gsariev/maintainerr-overlay-helperr:latest
     container_name: maintainerr-overlay-helperr
     environment:
       # --- Connection Settings ---
